@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flipbook - 10 Pagina's</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            overflow: hidden;
+        }
+        body {
+            font-family: 'Georgia', serif;
+            background: radial-gradient(circle at top, #f3e7d3, #e0d1b0, #c9b08a);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .flipbook-container {
+            background: #00000000;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            backdrop-filter: blur(12px);
+        }
+
+        .flipbook {
+            perspective: 1200px;
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            position: relative;
+            background: rgba(255,250,240,0.3);
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid rgba(120,80,40,0.25);
+            backdrop-filter: blur(10px);
+        }
+
+        .book-page {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            opacity: 0;
+            pointer-events: none;
+            transition: none;
+        }
+
+        .book-page.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Flip-in animatie (pagina komt van rechts) */
+        .book-page.flip-in {
+            animation: flipInAnimation 0.8s ease-out forwards;
+        }
+
+        /* Flip-out animatie (pagina gaat naar links) */
+        .book-page.flip-out {
+            animation: flipOutAnimation 0.8s ease-out forwards;
+        }
+
+        @keyframes flipInAnimation {
+            0% {
+                opacity: 0;
+                transform: rotateY(90deg) translateZ(0);
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 1;
+                transform: rotateY(0deg) translateZ(0);
+            }
+        }
+
+        @keyframes flipOutAnimation {
+            0% {
+                opacity: 1;
+                transform: rotateY(0deg) translateZ(0);
+            }
+            50% {
+                opacity: 0.5;
+            }
+            100% {
+                opacity: 0;
+                transform: rotateY(-90deg) translateZ(0);
+            }
+        }
+
+        /* Pagina inhoud */
+        .page-content {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: rgba(255,248,230,0.55);
+            border: 1px solid rgba(120,80,40,0.25);
+            box-shadow: inset 0 0 25px rgba(120,80,40,0.2);
+            position: relative;
+            color: #5a4632;
+        }
+
+        .page-content.left-page {
+            background: rgba(255,248,230,0.55);
+            backdrop-filter: blur(6px);
+        }
+
+        .page-content.right-page {
+            background: rgba(255,248,230,0.55);
+            backdrop-filter: blur(6px);
+        }
+
+        /* Cover pagina speciale styling */
+        .cover-page .page-content {
+            background: linear-gradient(135deg, #d9c7a3 0%, #b79f78 100%);
+            color: #3f2f1d;
+        }
+
+        .cover-page h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .cover-page p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        /* Normale pagina's */
+        .page-content h2 {
+            font-size: 2.5em;
+            color: #4a3826;
+            margin-bottom: 20px;
+        }
+
+        .page-content p {
+            font-size: 1em;
+            color: #4a3826;
+            line-height: 1.6;
+            max-width: 90%;
+        }
+
+        .page-number {
+            position: absolute;
+            bottom: 20px;
+            font-size: 0.9em;
+            color: #6b5338;
+            font-weight: bold;
+        }
+
+        .page-content.left-page .page-number {
+            left: 20px;
+        }
+
+        .page-content.right-page .page-number {
+            right: 20px;
+        }
+
+        /* Duo-pagina (voor spreads) */
+        .spread {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .spread .page-content {
+            width: 50%;
+        }
+
+        /* Controles */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            gap: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #c9a97a 0%, #b48b56 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(180,140,90,0.4);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            font-size: 1.1em;
+            color: #333;
+            font-weight: bold;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .flipbook-container {
+                padding: 15px;
+            }
+
+            .page-content {
+                padding: 20px;
+            }
+
+            .page-content h2 {
+                font-size: 1.8em;
+            }
+
+            .page-content p {
+                font-size: 0.9em;
+            }
+
+            .cover-page h1 {
+                font-size: 2em;
+            }
+
+            button {
+                padding: 10px 20px;
+                font-size: 0.9em;
+            }
+        }
+        .controls button {
+            display: none;
+        }
+
+.qr-hidden {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 80px;
+    height: auto;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.page-content.right-page:hover .qr-hidden {
+    opacity: 1;
+}
+    </style>
+</head>
+<body>
+    <div class="flipbook-container">
+        <h1 style="text-align: center; margin-bottom: 20px; color: #333;">FROST — Het Verloren Archief</h1>
+        
+        <div class="flipbook" id="flipbook">
+            <!-- Cover pagina -->
+            <div class="book-page cover-page active" data-page="0">
+                <div class="page-content">
+                    <img src="images6/ijs.png" alt="Cover IJs" style="width: 70%; height: auto; border-radius: 8px; margin-bottom: 20px;">
+                
+                </div>
+            </div>
+
+            <!-- Spreads (pagina's in paren) -->
+            <div class="book-page" data-page="1">
+                <div class="spread">
+                    <!-- Pagina 1 -->
+                    <div class="page-content left-page">
+                        <h2>Laag I — Beeld</h2>
+                        <p>Het begon met stilstaande beelden. Bevroren herinneringen in een kamer zonder tijd.</p>
+                        <div class="page-number">1</div>
+                    </div>
+                    <!-- Pagina 2 -->
+                    <div class="page-content right-page">
+                        <h2>Laag II — Klank</h2>
+                        <p>Sommige geluiden reizen verder dan echo's. Niet elk signaal wil gehoord worden.</p>
+                        <div class="page-number">2</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagina's 3 & 4 -->
+            <div class="book-page" data-page="2">
+                <div class="spread">
+                    <div class="page-content left-page">
+                        <h2>Laag III — Licht</h2>
+                        <p>Flitsen tussen de frames onthulden patronen die niet op film thuishoorden.</p>
+                        <div class="page-number">3</div>
+                    </div>
+                    <div class="page-content right-page">
+                        <h2>Laag IV — Ritueel</h2>
+                        <p>Een boom, een ritme, een reeks pulsen—meer dan decor, een sleutel.</p>
+                        <div class="page-number">4</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagina's 5 & 6 -->
+            <div class="book-page" data-page="3">
+                <div class="spread">
+                    <div class="page-content left-page">
+                        <h2>Laag V — Stilte</h2>
+                        <p>Onder elke regel schuilt een tweede zin. Stilte is nooit leeg.</p>
+                        <div class="page-number">5</div>
+                    </div>
+                    <div class="page-content right-page">
+                        <h2>Laag VI — Tijd</h2>
+                        <p>Tijd brak niet—ze gleed weg. Wat overbleef, wekt Frost.</p>
+                        <div class="page-number">6</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagina's 7 & 8 -->
+            <div class="book-page" data-page="4">
+                <div class="spread">
+                    <div class="page-content left-page">
+                        <h2>De Fout</h2>
+                        <p>Ergens tussen nul en één vergat hij wie hij was. Jij moet het vinden.</p>
+                        <div class="page-number">7</div>
+                    </div>
+                    <div class="page-content right-page">
+                        <h2>De Herstart</h2>
+                        <p>Een keuze. Herstellen of loslaten. Niet elke reboot is een redding.</p>
+                        <div class="page-number">8</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagina's 9 & 10 -->
+            <div class="book-page" data-page="5">
+                <div class="spread">
+                    <div class="page-content left-page">
+                        <h2>Laatste Waarschuwing</h2>
+                        <p>Sommige paden blijven verborgen tot het licht goed valt. Kijk opnieuw.</p>
+                        <div class="page-number">9</div>
+                    </div>
+                    <div class="page-content right-page">
+                        <img src="images6/qr.jpg"
+                             alt="QR code"
+                             class="qr-hidden">
+                        <h2>Einde — Voor nu</h2>
+                        <p>Het archief slaapt, maar niet voor lang. Frost wacht op de volgende beweging.</p>
+                        <div class="page-number">10</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigatie knoppen -->
+        <div class="controls">
+            <button id="prevBtn" onclick="previousPage()">← Vorige</button>
+            <span class="page-info">
+                <span id="currentPage">cover</span>
+            </span>
+            <button id="nextBtn" onclick="nextPage()">Volgende →</button>
+        </div>
+    </div>
+
+    <script>
+        // Huidige pagina tracken
+        let currentPageIndex = 0;
+        const totalPages = 6; // Cover + 5 spreads
+
+        // Page labels
+        const pageLabels = [
+            'Cover',
+            'Pagina\'s 1 - 2',
+            'Pagina\'s 3 - 4',
+            'Pagina\'s 5 - 6',
+            'Pagina\'s 7 - 8',
+            'Pagina\'s 9 - 10'
+        ];
+
+        /**
+         * Volgende pagina tonen met flip-animatie
+         */
+        function nextPage() {
+            if (currentPageIndex < totalPages - 1) {
+                // Huidige pagina flip-out
+                const currentPage = document.querySelector(`[data-page="${currentPageIndex}"]`);
+                currentPage.classList.remove('active');
+                currentPage.classList.add('flip-out');
+
+                // Naar volgende pagina
+                currentPageIndex++;
+
+                // Nieuwe pagina flip-in
+                const nextPage = document.querySelector(`[data-page="${currentPageIndex}"]`);
+                nextPage.classList.remove('flip-out');
+                nextPage.classList.add('flip-in', 'active');
+
+                updateControls();
+            }
+        }
+
+        /**
+         * Vorige pagina tonen met flip-animatie
+         */
+        function previousPage() {
+            if (currentPageIndex > 0) {
+                // Huidige pagina flip-out
+                const currentPage = document.querySelector(`[data-page="${currentPageIndex}"]`);
+                currentPage.classList.remove('active');
+                currentPage.classList.add('flip-out');
+
+                // Naar vorige pagina
+                currentPageIndex--;
+
+                // Vorige pagina flip-in
+                const prevPage = document.querySelector(`[data-page="${currentPageIndex}"]`);
+                prevPage.classList.remove('flip-out');
+                prevPage.classList.add('flip-in', 'active');
+
+                updateControls();
+            }
+        }
+
+        /**
+         * Update de controle-knoppen en pagina-informatie
+         */
+        function updateControls() {
+            // Update pagina-tekst
+            document.getElementById('currentPage').textContent = pageLabels[currentPageIndex];
+
+            // Update knop-states
+            document.getElementById('prevBtn').disabled = currentPageIndex === 0;
+            document.getElementById('nextBtn').disabled = currentPageIndex === totalPages - 1;
+        }
+
+        // Initialize
+        updateControls();
+
+        /**
+         * Keyboard navigatie ondersteuning
+         */
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') previousPage();
+            if (e.key === 'ArrowRight') nextPage();
+        });
+    </script>
+</body>
+</html>
