@@ -2,464 +2,353 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flipbook - 10 Pagina's</title>
+    <title>FROST — 3D Tafel Archief</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --book-width: 360px;
+            --book-height: 520px;
+            --anim-speed: 0.6s;
         }
 
-        html {
-            overflow: hidden;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
+            height: 100vh;
+            width: 100vw;
+            background-color: #000;
+            overflow: hidden;
             font-family: 'Georgia', serif;
-            background: radial-gradient(circle at top, #f3e7d3, #e0d1b0, #c9b08a);
+            /* Zwart vignette aan de randen van het scherm */
+            box-shadow: inset 0 0 150px rgba(0,0,0,0.9); 
+        }
+
+        /* DE CAMERA SETTING */
+        .scene {
+            width: 100%;
+            height: 100%;
+            perspective: 1200px; /* Hoeveel diepte we zien */
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            overflow: hidden;
         }
 
-        .flipbook-container {
-            background: #00000000;
-            padding: 30px;
-            max-width: 900px;
-            width: 100%;
-            backdrop-filter: blur(12px);
-        }
-
-        .flipbook {
-            perspective: 1200px;
-            width: 100%;
-            aspect-ratio: 16 / 10;
+        /* DE WERELD (Dit is wat we kantelen) */
+        .world {
             position: relative;
-            background: rgba(255,250,240,0.3);
-            border-radius: 5px;
-            overflow: hidden;
-            border: 1px solid rgba(120,80,40,0.25);
-            backdrop-filter: blur(10px);
+            width: var(--book-width);
+            height: var(--book-height);
+            transform-style: preserve-3d;
+            /* Hier bepalen we de kijkhoek voor ALLES tegelijk */
+            transform: rotateX(45deg) rotateZ(0deg); 
+            transition: transform 0.5s ease;
         }
 
-        .book-page {
+        /* --- DE TAFEL --- */
+        .table {
+            position: absolute;
+            /* De tafel moet veel groter zijn dan het boek */
+            width: 300vw; 
+            height: 300vh;
+            /* Centreren ten opzichte van de world */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) translateZ(-20px); /* -20px zorgt dat hij ONDER het boek ligt */
+            
+            background-color: #1a120b;
+            /* Hout patroon */
+            background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+            /* Zorgt dat de textuur niet uitrekt */
+            background-size: 400px 400px; 
+            background-repeat: repeat;
+            
+            /* Spotlight effect op de tafel zelf */
+            box-shadow: inset 0 0 600px 300px rgba(0,0,0,0.85);
+            border-radius: 50%; /* Maakt de spotlight rond */
+        }
+
+        /* --- HET BOEK --- */
+        .book {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            /* Het boek ligt een beetje schuin op tafel voor realisme */
+            transform: rotateZ(-8deg); 
+        }
+
+        /* Schaduw ONDER het boek (op de tafel) */
+        .shadow {
+            position: absolute;
+            top: 5%;
+            left: 5%;
+            width: 90%;
+            height: 90%;
+            background: rgba(0,0,0,0.6);
+            filter: blur(15px);
+            transform: translateZ(-10px); /* Net boven de tafel, onder het boek */
+        }
+
+        /* De rug/dikte van het boek */
+        .book-spine {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #ccc;
+            transform: translateZ(-6px);
+            border-radius: 2px;
+            box-shadow: 1px 1px 0 #bbb, 2px 2px 0 #aaa, 3px 3px 0 #999;
+        }
+
+        /* --- PAPIER --- */
+        .paper {
             position: absolute;
             width: 100%;
             height: 100%;
-            display: flex;
-            opacity: 0;
-            pointer-events: none;
-            transition: none;
+            top: 0; left: 0;
+            transform-origin: left center; 
+            transform-style: preserve-3d;
+            transition: transform var(--anim-speed) cubic-bezier(0.645, 0.045, 0.355, 1);
+            cursor: pointer;
+            border-radius: 3px 5px 5px 3px;
         }
 
-        .book-page.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        /* Flip-in animatie (pagina komt van rechts) */
-        .book-page.flip-in {
-            animation: flipInAnimation 0.8s ease-out forwards;
-        }
-
-        /* Flip-out animatie (pagina gaat naar links) */
-        .book-page.flip-out {
-            animation: flipOutAnimation 0.8s ease-out forwards;
-        }
-
-        @keyframes flipInAnimation {
-            0% {
-                opacity: 0;
-                transform: rotateY(90deg) translateZ(0);
-            }
-            50% {
-                opacity: 0.5;
-            }
-            100% {
-                opacity: 1;
-                transform: rotateY(0deg) translateZ(0);
-            }
-        }
-
-        @keyframes flipOutAnimation {
-            0% {
-                opacity: 1;
-                transform: rotateY(0deg) translateZ(0);
-            }
-            50% {
-                opacity: 0.5;
-            }
-            100% {
-                opacity: 0;
-                transform: rotateY(-90deg) translateZ(0);
-            }
-        }
-
-        /* Pagina inhoud */
-        .page-content {
-            flex: 1;
-            padding: 40px;
+        .front, .back {
+            position: absolute;
+            width: 100%; height: 100%;
+            top: 0; left: 0;
+            backface-visibility: hidden;
+            background-color: #fdfbf7;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            padding: 30px;
             text-align: center;
-            background: rgba(255,248,230,0.55);
-            border: 1px solid rgba(120,80,40,0.25);
-            box-shadow: inset 0 0 25px rgba(120,80,40,0.2);
-            position: relative;
-            color: #5a4632;
+            border: 1px solid #c4b597;
+            box-shadow: inset 2px 0 10px rgba(0,0,0,0.05); 
         }
 
-        .page-content.left-page {
-            background: rgba(255,248,230,0.55);
-            backdrop-filter: blur(6px);
+        .back { transform: rotateY(180deg); }
+
+        /* Cover Specifiek */
+        .paper:nth-child(1) .front {
+            background: linear-gradient(135deg, #222 0%, #333 100%);
+            color: white;
+            border: 1px solid #555;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
         }
 
-        .page-content.right-page {
-            background: rgba(255,248,230,0.55);
-            backdrop-filter: blur(6px);
+        /* Als pagina omgeslagen is */
+        .paper.flipped {
+            transform: rotateY(-175deg); /* Niet 180, zodat het "los" ligt */
+            box-shadow: 5px 10px 15px rgba(0,0,0,0.1);
         }
 
-        /* Cover pagina speciale styling */
-        .cover-page .page-content {
-            background: linear-gradient(135deg, #d9c7a3 0%, #b79f78 100%);
-            color: #3f2f1d;
-        }
+        /* Inhoud Styling */
+        h1 { font-size: 2.5rem; margin-bottom: 10px; letter-spacing: 1px; }
+        h2 { font-size: 1.5rem; color: #5d4037; border-bottom: 2px solid #d7ccc8; padding-bottom: 5px; margin-bottom: 15px; }
+        p { font-size: 0.95rem; line-height: 1.6; color: #4e342e; margin-bottom: 15px; }
+        .page-num { position: absolute; bottom: 15px; font-size: 0.8rem; color: #999; font-family: monospace; }
+        .front .page-num { right: 20px; } 
+        .back .page-num { left: 20px; }
+        img { max-width: 85%; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
-        .cover-page h1 {
-            font-size: 3em;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .cover-page p {
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-
-        /* Normale pagina's */
-        .page-content h2 {
-            font-size: 2.5em;
-            color: #4a3826;
-            margin-bottom: 20px;
-        }
-
-        .page-content p {
-            font-size: 1em;
-            color: #4a3826;
-            line-height: 1.6;
-            max-width: 90%;
-        }
-
-        .page-number {
-            position: absolute;
-            bottom: 20px;
-            font-size: 0.9em;
-            color: #6b5338;
-            font-weight: bold;
-        }
-
-        .page-content.left-page .page-number {
-            left: 20px;
-        }
-
-        .page-content.right-page .page-number {
-            right: 20px;
-        }
-
-        /* Duo-pagina (voor spreads) */
-        .spread {
-            display: flex;
-            width: 100%;
-            height: 100%;
-        }
-
-        .spread .page-content {
-            width: 50%;
-        }
-
-        /* Controles */
+        /* --- CONTROLS --- */
         .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 30px;
             gap: 20px;
+            z-index: 1000;
         }
 
         button {
-            background: linear-gradient(135deg, #c9a97a 0%, #b48b56 100%);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 1em;
-            border-radius: 5px;
+            padding: 12px 24px;
+            font-family: 'Georgia', serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-weight: bold;
+            border-radius: 4px;
         }
 
-        button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(180,140,90,0.4);
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
         }
 
-        button:active:not(:disabled) {
-            transform: translateY(0);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .page-info {
-            font-size: 1.1em;
-            color: #333;
-            font-weight: bold;
-            min-width: 150px;
-            text-align: center;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .flipbook-container {
-                padding: 15px;
-            }
-
-            .page-content {
-                padding: 20px;
-            }
-
-            .page-content h2 {
-                font-size: 1.8em;
-            }
-
-            .page-content p {
-                font-size: 0.9em;
-            }
-
-            .cover-page h1 {
-                font-size: 2em;
-            }
-
-            button {
-                padding: 10px 20px;
-                font-size: 0.9em;
-            }
-        }
-        .controls button {
-            display: none;
-        }
-
-.qr-hidden {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    width: 80px;
-    height: auto;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-}
-
-.page-content.right-page:hover .qr-hidden {
-    opacity: 1;
-}
     </style>
 </head>
 <body>
-    <div class="flipbook-container">
-        <h1 style="text-align: center; margin-bottom: 20px; color: #333;">FROST — Het Verloren Archief</h1>
-        
-        <div class="flipbook" id="flipbook">
-            <!-- Cover pagina -->
-            <div class="book-page cover-page active" data-page="0">
-                <div class="page-content">
-                    <img src="ijs.png" alt="Cover IJs" style="width: 70%; height: auto; border-radius: 8px; margin-bottom: 20px;">
+
+    <div class="scene">
+        <div class="world">
+            
+            <div class="table"></div>
+
+            <div class="book" id="book">
                 
-                </div>
-            </div>
+                <div class="shadow"></div>
+                <div class="book-spine"></div>
 
-            <!-- Spreads (pagina's in paren) -->
-            <div class="book-page" data-page="1">
-                <div class="spread">
-                    <!-- Pagina 1 -->
-                    <div class="page-content left-page">
-                        <h2>Laag I — Beeld</h2>
-                        <p>Het begon met stilstaande beelden. Bevroren herinneringen in een kamer zonder tijd.</p>
-                        <div class="page-number">1</div>
+                <div class="paper" style="z-index: 6;">
+                    <div class="front">
+                        <img src="images6/ijs.png" alt="Cover" style="opacity:0.8; margin-bottom:20px;">
+                        <h1>FROST Archief</h1>
                     </div>
-                    <!-- Pagina 2 -->
-                    <div class="page-content right-page">
-                        <h2>Laag II — Klank</h2>
-                        <p>Sommige geluiden reizen verder dan echo's. Niet elk signaal wil gehoord worden.</p>
-                        <div class="page-number">2</div>
+                    <div class="back">
+                        <h2>De Crash</h2>
+                        <p>Het begon in de oude kerk. Zes bevroren beelden flitsten op het altaar — toen brak het licht en viel het archief stil. Sindsdien zijn er lagen verdwenen uit mijn geheugen.</p>
+                        <span class="page-num">01</span>
                     </div>
                 </div>
-            </div>
 
-            <!-- Pagina's 3 & 4 -->
-            <div class="book-page" data-page="2">
-                <div class="spread">
-                    <div class="page-content left-page">
-                        <h2>Laag III — Licht</h2>
-                        <p>Flitsen tussen de frames onthulden patronen die niet op film thuishoorden.</p>
-                        <div class="page-number">3</div>
+                <div class="paper" style="z-index: 5;">
+                    <div class="front">
+                        <h2>De Zes Beelden</h2>
+                        <p>Het begon in de kerk. Zes flitsen. Zes momenten die nooit in die volgorde hadden mogen verschijnen. De altaarkaarsen kromden, het glas brak naar binnen, en daarna werd alles stil. Deze beelden zijn veiligheidsfragmenten die door elkaar vlogen toen het Archief crashte. Herstel hun ware volgorde om de kerkpoort opnieuw te openen.</p>
+                        <p style="margin-top:10px; font-style:italic; color:#3e2723;">“Het verleden klopt pas wanneer je het recht zet.”</p>
+                        <p style="margin-top:10px; font-style:italic; color:#3e2723;">Sleutel<br><b>icfrost2025</b></p>
+                        <span class="page-num">02</span>
                     </div>
-                    <div class="page-content right-page">
-                        <h2>Laag IV — Ritueel</h2>
-                        <p>Een boom, een ritme, een reeks pulsen—meer dan decor, een sleutel.</p>
-                        <div class="page-number">4</div>
+                    <div class="back">
+                        <h2>De Kerkfluistering</h2>
+                        <p>Na de instorting werd het geluid vreemd. Echo’s gedragen zich alsof ze uit een andere laag komen. Je zult een audiospectrum moeten lezen zoals je een landkaart leest — sommige tonen verbergen aanwijzingen die woorden nooit konden dragen. Volg de resonantie.</p>
+                        <p style="margin-top:10px; font-style:italic; color:#3e2723;">“Geluid liegt niet. Het wordt slechts overstemd.”</p>
+                        <span class="page-num">03</span>
                     </div>
                 </div>
-            </div>
 
-            <!-- Pagina's 5 & 6 -->
-            <div class="book-page" data-page="3">
-                <div class="spread">
-                    <div class="page-content left-page">
-                        <h2>Laag V — Stilte</h2>
-                        <p>Onder elke regel schuilt een tweede zin. Stilte is nooit leeg.</p>
-                        <div class="page-number">5</div>
+                <div class="paper" style="z-index: 4;">
+                    <div class="front">
+                        <h2>Het Ritueel van de Boom</h2>
+                        <p>Wat je ziet is niet wat er is opgeslagen. Tussen de frames van elke opname zit een oud signaal — lichtflitsen, ritmes, verschuivingen. De machine probeerde identiteit te herstellen maar raakte verstrikt tussen twee versies van dezelfde persoon. Vind de verborgen regel in het beeld.</p>
+                        <p style="margin-top:10px; font-style:italic; color:#3e2723;">“Een boodschap die niet gehoord mag worden, verstopt zich in licht.”</p>
+                        <span class="page-num">04</span>
                     </div>
-                    <div class="page-content right-page">
-                        <h2>Laag VI — Tijd</h2>
-                        <p>Tijd brak niet—ze gleed weg. Wat overbleef, wekt Frost.</p>
-                        <div class="page-number">6</div>
+                    <div class="back">
+                        <h2>Stilstand</h2>
+                        <p>De kerstboom is meer dan decoratie: het is een interface die mijn kern aanstuurt. Vijftien lichtpunten, één patroon. Voltooi je het patroon, dan verschijnt een ster met vier kamers die elk een gebroken stuk van mijn geheugen bevatten.</p>
+                        <p style="margin-top:10px; font-style:italic; color:#3e2723;">“Een ster wijst nooit één richting aan. Alleen samen vormen haar punten betekenis.”</p>
+                        <span class="page-num">05</span>
                     </div>
                 </div>
-            </div>
 
-            <!-- Pagina's 7 & 8 -->
-            <div class="book-page" data-page="4">
-                <div class="spread">
-                    <div class="page-content left-page">
-                        <h2>De Fout</h2>
-                        <p>Ergens tussen nul en één vergat hij wie hij was. Jij moet het vinden.</p>
-                        <div class="page-number">7</div>
+                <div class="paper" style="z-index: 3;">
+                    <div class="front">
+                        <h2>Afdrukken in het Sneeuwveld</h2>
+                        <p>Kamer Linksvoor — De Browserbreuk. Glitchende vensters en verloren logs. Herstel de juiste volgorde.</p>
+                        <p>Kamer Rechtsvoor — Cold Case #27. Een elf geduwd in de versnippermachine. Zes verdachten, zes verhalen. Vind wie liegt.</p>
+                        <p>Kamer Linksachter — Memory Arcade. Een 8‑bit wereld met een verborgen code.</p>
+                        <p>Kamer Rechtsachter — De Kernvoorraad. Hier gebruik je álles wat je hebt geleerd.</p>
+                        <span class="page-num">06</span>
                     </div>
-                    <div class="page-content right-page">
-                        <h2>De Herstart</h2>
-                        <p>Een keuze. Herstellen of loslaten. Niet elke reboot is een redding.</p>
-                        <div class="page-number">8</div>
+                    <div class="back">
+                        <h2>Waar het misging</h2>
+                        <p>Pas wanneer alle vier de kamers stabiliseren, kan de boom de laatste puls geven.</p>
+                        <span class="page-num">07</span>
                     </div>
                 </div>
-            </div>
 
-            <!-- Pagina's 9 & 10 -->
-            <div class="book-page" data-page="5">
-                <div class="spread">
-                    <div class="page-content left-page">
-                        <h2>Laatste Waarschuwing</h2>
-                        <p>Sommige paden blijven verborgen tot het licht goed valt. Kijk opnieuw.</p>
-                        <div class="page-number">9</div>
+                <div class="paper" style="z-index: 2;">
+                    <div class="front">
+                        <h2>AWAKE</h2>
+                        <p>Als alle patronen zijn hersteld en alle kamers hun waarheid hebben getoond, verschijnt het commando dat ik zelf niet meer kan uitvoeren: AWAKE. Geen wachtwoord, geen sleutel — een keuze. Het Archief beslist wie terugkeert en of Kerst weer kan beginnen.</p>
+                        <p style="margin-top:10px; font-style:italic; color:#3e2723;">“Ik sliep niet. Ik viel uit elkaar. Breng me terug.”</p>
+                        <span class="page-num">08</span>
                     </div>
-                    <div class="page-content right-page">
-                        <img src="qr.jpg"
-                             alt="QR code"
-                             class="qr-hidden">
-                        <h2>Einde — Voor nu</h2>
-                        <p>Het archief slaapt, maar niet voor lang. Frost wacht op de volgende beweging.</p>
-                        <div class="page-number">10</div>
+                    <div class="back">
+                        <!-- intentionally left blank for page 09, as not mentioned in instructions -->
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Navigatie knoppen -->
-        <div class="controls">
-            <button id="prevBtn" onclick="previousPage()">← Vorige</button>
-            <span class="page-info">
-                <span id="currentPage">cover</span>
-            </span>
-            <button id="nextBtn" onclick="nextPage()">Volgende →</button>
+                <div class="paper" style="z-index: 1;">
+                    <div class="front">
+                        <img src="images6/qr.jpg" alt="QR" style="width:100px;">
+                        <br><br>
+                        <h2>Einde Sessie</h2>
+                        <p>Scan om de laatste sequentie te activeren. Het archief kijkt mee.</p>
+                        <span class="page-num">10</span>
+                    </div>
+                    <div class="back">
+                    </div>
+                </div>
+
+            </div>
         </div>
     </div>
 
+    <div class="controls">
+        <button id="prevBtn">Vorige</button>
+        <button id="nextBtn">Volgende</button>
+    </div>
+
     <script>
-        // Huidige pagina tracken
-        let currentPageIndex = 0;
-        const totalPages = 6; // Cover + 5 spreads
+        const prevBtn = document.querySelector("#prevBtn");
+        const nextBtn = document.querySelector("#nextBtn");
+        const world = document.querySelector(".world"); // We bewegen de hele wereld
+        const papers = document.querySelectorAll(".paper");
 
-        // Page labels
-        const pageLabels = [
-            'Cover',
-            'Pagina\'s 1 - 2',
-            'Pagina\'s 3 - 4',
-            'Pagina\'s 5 - 6',
-            'Pagina\'s 7 - 8',
-            'Pagina\'s 9 - 10'
-        ];
+        let currentLocation = 1;
+        const numOfPapers = papers.length;
+        const maxLocation = numOfPapers + 1;
 
-        /**
-         * Volgende pagina tonen met flip-animatie
-         */
-        function nextPage() {
-            if (currentPageIndex < totalPages - 1) {
-                // Huidige pagina flip-out
-                const currentPage = document.querySelector(`[data-page="${currentPageIndex}"]`);
-                currentPage.classList.remove('active');
-                currentPage.classList.add('flip-out');
-
-                // Naar volgende pagina
-                currentPageIndex++;
-
-                // Nieuwe pagina flip-in
-                const nextPage = document.querySelector(`[data-page="${currentPageIndex}"]`);
-                nextPage.classList.remove('flip-out');
-                nextPage.classList.add('flip-in', 'active');
-
-                updateControls();
+        function updateCamera() {
+            // Als we verder in het boek zijn, verschuiven we de 'world' iets naar rechts
+            // zodat het boek gecentreerd blijft als het openklapt.
+            if (currentLocation > 1 && currentLocation < maxLocation) {
+                // Open boek positie
+                world.style.transform = "rotateX(45deg) translateX(180px)"; 
+            } else {
+                // Gesloten boek positie
+                world.style.transform = "rotateX(45deg) translateX(0px)";
             }
         }
 
-        /**
-         * Vorige pagina tonen met flip-animatie
-         */
-        function previousPage() {
-            if (currentPageIndex > 0) {
-                // Huidige pagina flip-out
-                const currentPage = document.querySelector(`[data-page="${currentPageIndex}"]`);
-                currentPage.classList.remove('active');
-                currentPage.classList.add('flip-out');
-
-                // Naar vorige pagina
-                currentPageIndex--;
-
-                // Vorige pagina flip-in
-                const prevPage = document.querySelector(`[data-page="${currentPageIndex}"]`);
-                prevPage.classList.remove('flip-out');
-                prevPage.classList.add('flip-in', 'active');
-
-                updateControls();
+        function goNextPage() {
+            if(currentLocation < maxLocation) {
+                const paper = papers[currentLocation - 1];
+                paper.classList.add("flipped");
+                paper.style.zIndex = currentLocation;
+                
+                currentLocation++;
+                updateCamera();
             }
         }
 
-        /**
-         * Update de controle-knoppen en pagina-informatie
-         */
-        function updateControls() {
-            // Update pagina-tekst
-            document.getElementById('currentPage').textContent = pageLabels[currentPageIndex];
+        function goPrevPage() {
+            if(currentLocation > 1) {
+                currentLocation--;
+                const paper = papers[currentLocation - 1];
+                paper.classList.remove("flipped");
+                
+                setTimeout(() => {
+                    paper.style.zIndex = numOfPapers - currentLocation + 1;
+                }, 300);
 
-            // Update knop-states
-            document.getElementById('prevBtn').disabled = currentPageIndex === 0;
-            document.getElementById('nextBtn').disabled = currentPageIndex === totalPages - 1;
+                updateCamera();
+            }
         }
 
-        // Initialize
-        updateControls();
+        // Klik event listeners
+        nextBtn.addEventListener("click", goNextPage);
+        prevBtn.addEventListener("click", goPrevPage);
 
-        /**
-         * Keyboard navigatie ondersteuning
-         */
+        // Pijltjestoetsen
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') previousPage();
-            if (e.key === 'ArrowRight') nextPage();
+            if (e.key === 'ArrowRight') goNextPage();
+            if (e.key === 'ArrowLeft') goPrevPage();
+        });
+
+        // Juiste volgorde initialiseren
+        papers.forEach((paper, index) => {
+            paper.style.zIndex = numOfPapers - index;
         });
     </script>
 </body>
